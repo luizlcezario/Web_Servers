@@ -1,5 +1,6 @@
 #include <Configuration.hpp>
 
+
 Config::Configuration::Configuration()
 {
 }
@@ -8,15 +9,15 @@ Config::Configuration::~Configuration()
 {
 }
 
-void Config::Configuration::loadFile(std::string filename) throw(std::invalid_argument, std::runtime_error)
+void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile, Excp::BadLabel)
 {
     std::ifstream config_file(filename.c_str());
     std::string line;
 
     if (!utils::ends_with(filename, ".toml"))
-        throw std::invalid_argument("File is not a .config file");
+        throw Excp::WrongFile(filename);
     if (!config_file.is_open())
-        throw std::runtime_error("Error: Could not open file " + filename);
+        throw Excp::FileNotOpen(filename);
     while (std::getline(config_file, line))
     {
         if (line.find("#") != std::string::npos)
@@ -29,7 +30,7 @@ void Config::Configuration::loadFile(std::string filename) throw(std::invalid_ar
             if (line == SLABEL)
                 std::cout << "Found server label" << std::endl;
             else
-                throw std::invalid_argument("Error: Unknown label " + line);
+                throw Excp::BadLabel(line);
         } else 
             std::cout << line << std::endl;
     }

@@ -1,14 +1,21 @@
 NAME			=	webserver
+UNITEST			=	unitest
 CC				=	c++
-CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3
 
-HEADER			=	-I ./src/header
+CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3
+CFLAGSTEST 		= 	-g3 -std=c++11
+
+HEADER			=	-I src/header
+
+HEADER_TEST 	=	-I test/header
 
 CLASS			= 	Configuration.cpp 
 
 UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp
 			
 SRC				=	main.cpp $(addprefix class/, $(CLASS)) $(addprefix utils/, $(UTILS))
+
+TEST_FILES		=	test/main_test.cpp $(addprefix test/class/, $(CLASS:%.cpp=%_test.cpp)) $(addprefix test/utils/, $(UTILS:%.cpp=%_test.cpp))  $(addprefix src/class/, $(CLASS)) $(addprefix src/utils/, $(UTILS))
 
 SOURCES_DIR		=	./src
 
@@ -17,6 +24,7 @@ OBJ_DIR			=	obj
 SOURCES			=	$(addprefix $(SOURCES_DIR)/, $(SRC))
 
 OBJS			=	$(SOURCES:$(SOURCES_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
 
 $(OBJ_DIR)/%.o:		$(SOURCES_DIR)/%.cpp
 					$(CC) $(CFLAGS) $(HEADER) -c $< -o $@
@@ -39,4 +47,12 @@ fclean:				clean
 
 re:					fclean all
 
-.PHONY:				all clean fclean re
+
+test: $(UNITEST)
+	./$(UNITEST)
+	rm -rf $(UNITEST)
+
+$(UNITEST):
+	@$(CC) $(CFLAGSTEST) $(HEADER) $(HEADER_TEST) $(TEST_FILES) -o $(UNITEST)
+
+.PHONY:	test all clean fclean re

@@ -66,6 +66,7 @@
 		"numbers": "cpp",
 		"cinttypes": "cpp",
 		"codecvt": "cpp",
-		"ratio": "cpp"
+		"ratio": "cpp",
+		"cassert": "cpp"
 	}
 }
