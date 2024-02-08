@@ -7,8 +7,6 @@
 
 namespace Excp {
 
-
-
 class FileNotOpen : public std::exception
 {
     public:
