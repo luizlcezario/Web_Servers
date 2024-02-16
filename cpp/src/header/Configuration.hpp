@@ -14,7 +14,6 @@
 
 #define SLABEL "server"
 
-
 namespace Config
 {
      struct Router {
@@ -32,7 +31,7 @@ namespace Config
         int port;
         std::string serverName;
         std::map<int, std::string> errorPages;
-        std::string bodySize;
+        size_t bodySize;
         std::map<std::string, struct Router> locations;
     }   Server;
 
@@ -41,7 +40,7 @@ namespace Config
     {
     private:
         std::vector<Server> _config;
-        Server _initServer();
+        Server *_initServer();
         
     public:
         Configuration();

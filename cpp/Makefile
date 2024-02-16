@@ -12,7 +12,7 @@ HEADER_TEST 	=	-I test/header
 CLASS			= 	Configuration.cpp 
 
 UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp
-			
+
 SRC				=	main.cpp $(addprefix class/, $(CLASS)) $(addprefix utils/, $(UTILS))
 
 TEST_FILES		=	test/main_test.cpp $(addprefix test/class/, $(CLASS:%.cpp=%_test.cpp)) $(addprefix test/utils/, $(UTILS:%.cpp=%_test.cpp))  $(addprefix src/class/, $(CLASS)) $(addprefix src/utils/, $(UTILS))
