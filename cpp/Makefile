@@ -9,9 +9,9 @@ HEADER			=	-I src/header
 
 HEADER_TEST 	=	-I test/header
 
-CLASS			= 	Configuration.cpp 
-
-UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp
+CLASS			= 	Configuration.cpp  Server.cpp
+ 
+UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp split.cpp
 
 SRC				=	main.cpp $(addprefix class/, $(CLASS)) $(addprefix utils/, $(UTILS))
 
@@ -42,15 +42,19 @@ $(OBJ_DIR):
 clean:
 					rm -rf $(OBJ_DIR)
 
+
 fclean:				clean
 					rm -rf $(NAME)
+					rm -rf $(UNITEST)
 
 re:					fclean all
 
 
 test: $(UNITEST)
-	./$(UNITEST)
+	./$(UNITEST) 
 	rm -rf $(UNITEST)
+
+retest: fclean test
 
 $(UNITEST):
 	@$(CC) $(CFLAGSTEST) $(HEADER) $(HEADER_TEST) $(TEST_FILES) -o $(UNITEST)

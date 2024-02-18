@@ -2,6 +2,10 @@
 #define UTILS_HPP
 
 #include <string>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <vector>
 
 #define WHITESPACE " \n\r\t\f\v"
 
@@ -10,5 +14,21 @@ namespace utils
     std::string trim(const std::string &s, const std::string &replace = WHITESPACE);
     bool ends_with(std::string const &value, std::string const &ending);
     bool starts_with(std::string const &value, std::string const &ending);
+
+    std::vector<std::string> split(const std::string &s, char delim = ' ');
+
+    template <typename T, typename O>
+    void printMap(std::ostream &os, std::map<T, O> map) {
+        for (typename std::map<T, O>::iterator it = map.begin(); it != map.end(); it++) {
+            os << it->first << " => " << it->second << std::endl;
+        }
+    };
+
+    template <typename T>
+    void printVector(std::ostream &os, std::vector<T> vector) {
+        for (typename std::vector<T>::iterator it = vector.begin(); it != vector.end(); it++) {
+            os << *it << std::endl;
+        }
+    };
 };
 #endif // UTILS_HPP
