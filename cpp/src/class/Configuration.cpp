@@ -1,7 +1,7 @@
 #include <Configuration.hpp>
 
 
-Config::Configuration::Configuration() : isError(false), isLocation(false)
+Config::Configuration::Configuration() : isError(false), isLocation(false), location("")
 {
 }
 
@@ -12,13 +12,11 @@ Config::Configuration::~Configuration()
     _config.clear();
 }
 
-std::vector<Config::Server *> Config::Configuration::getConfig() {
+const std::vector<Config::Server *> & Config::Configuration::getConfig() const {
     return _config;
 }
 
 void Config::Configuration::_populateServer(Config::Server *server, std::string line) {
-    static std::string location;
-
     if (utils::starts_with(line, "[")) {
         line = utils::trim(utils::trim(line, "[]"));
         if (line ==  std::string(SLABEL) + "." + std::string(ERRORLABEL)) {
@@ -27,6 +25,8 @@ void Config::Configuration::_populateServer(Config::Server *server, std::string 
         } else if (utils::starts_with(line, SLABEL + std::string(".") + LOCALABEL + std::string(".\""))) {
             isLocation = true;
             isError = false;
+            std::vector<std::string> split = utils::split(line, ".");
+            location = utils::trim(split[2]," \"");
         } else {
             throw Excp::BadLabel(line);
         }
@@ -39,6 +39,8 @@ void Config::Configuration::_populateServer(Config::Server *server, std::string 
             server->setLocationsConfig(location, key, value);
         else
             server->setConfig(key, value);
+    } else {
+        throw Excp::BadLabel(line);
     }
 }
 
@@ -68,6 +70,7 @@ void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOp
                     _config.push_back(server);
                     isError = false;
                     isLocation = false;
+                    location = "";
                 }
                 server = new Config::Server();
             }
@@ -82,4 +85,22 @@ void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOp
         server->parseConfig();
         _config.push_back(server); 
     }
+}
+
+WebServer Config::Configuration::createSockets(){
+    WebServer webServer;
+     for (std::vector<Config::Server *>::const_iterator server = _config.begin(); server != _config.end(); server++) {
+        std::vector<std::string> port = (*server)->getPort();
+        for (std::vector<std::string>::iterator ipPort = port.begin(); ipPort != port.end(); ipPort++) {
+            webServer.addServerToSocket(SocketServer::getFullIp(*ipPort), *server);
+        }
+    }
+    return webServer;
+}
+
+std::ostream &operator<<(std::ostream &os, const Config::Configuration &config) {
+    for (std::vector<Config::Server *>::const_iterator it = config.getConfig().begin(); it != config.getConfig().end(); it++) {
+        os << **it;
+    }
+    return os;
 }

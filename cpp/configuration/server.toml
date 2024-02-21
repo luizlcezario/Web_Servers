@@ -13,7 +13,7 @@ client_max_body_size = "10M"
 
 # First server for a host:port becomes the default
 [[server]]
-listen = 8080
+listen = "172.18.42.184:80"
 server_name = "example.com"
 client_max_body_size = "10K"
 # Route configurations

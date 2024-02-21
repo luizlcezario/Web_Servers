@@ -1,17 +1,16 @@
 #include "utils.hpp"
 
 
-std::vector<std::string> utils::split(const std::string &s, char delim) {
+std::vector<std::string> utils::split(const std::string &s, const std::string& delim) {
     std::vector<std::string> elems;
-    char* cstr = new char[s.size() + 1];
-    std::strcpy(cstr, s.c_str());
-
-    char* token = std::strtok(cstr, &delim);
-    while (token != NULL) {
-        elems.push_back(std::string(token));
-        token = std::strtok(NULL, &delim);
+    std::string str = s;
+    size_t pos = 0;
+    std::string token;
+    while ((pos = str.find(delim)) != std::string::npos) {
+        token = str.substr(0, pos);
+        elems.push_back(token);
+        str.erase(0, pos + delim.length());
     }
-
-    delete[] cstr;
+    elems.push_back(str);
     return elems;
 }

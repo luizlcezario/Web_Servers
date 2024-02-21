@@ -9,7 +9,7 @@ HEADER			=	-I src/header
 
 HEADER_TEST 	=	-I test/header
 
-CLASS			= 	Configuration.cpp  Server.cpp
+CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp
  
 UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp split.cpp
 
