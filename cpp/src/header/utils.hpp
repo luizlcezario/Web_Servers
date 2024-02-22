@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 
+#define ISROOT (getuid() == 0)
 #define WHITESPACE " \n\r\t\f\v"
 
 namespace utils
@@ -15,7 +16,7 @@ namespace utils
     bool ends_with(std::string const &value, std::string const &ending);
     bool starts_with(std::string const &value, std::string const &ending);
 
-    std::vector<std::string> split(const std::string &s, char delim = ' ');
+    std::vector<std::string> split(const std::string &s,const std::string & delim = " ");
 
     template <typename T, typename O>
     void printMap(std::ostream &os, std::map<T, O> map) {

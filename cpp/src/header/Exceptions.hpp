@@ -28,6 +28,7 @@ class WrongFile : public std::exception
         return _filename.c_str();
     };
 };
+
 class BadLabel : public std::exception
 {
     public:
@@ -38,6 +39,7 @@ class BadLabel : public std::exception
         return _value.c_str();
     }
 };
+
 class BadValue : public std::exception
 {
     public:
@@ -49,5 +51,49 @@ class BadValue : public std::exception
     }
 };
 
+class SocketCreation : public std::exception
+{
+    public:
+    std::string _value;
+    SocketCreation(std::string value) : _value("Error: Socket creation failed code:" + value) {};
+    ~SocketCreation() throw() {}
+    const char *what() const throw() {
+        return _value.c_str();
+    }
 };
+
+class SocketBind : public std::exception
+{
+    public:
+    std::string _value;
+    SocketBind(std::string value) : _value("Error: Socket bind failed code:" + value) {};
+    ~SocketBind() throw() {}
+    const char *what() const throw() {
+        return _value.c_str();
+    }
+};
+
+class SocketListen : public std::exception
+{
+    public:
+    std::string _value;
+    SocketListen(std::string value) : _value("Error: Socket listen failed code:" + value) {};
+    ~SocketListen() throw() {}
+    const char *what() const throw() {
+        return _value.c_str();
+    }
+};
+
+class EpollCreation : public std::exception
+{
+    public:
+    std::string _value;
+    EpollCreation(std::string value) : _value("Error: Epoll creation failed code:" + value) {};
+    ~EpollCreation() throw() {}
+    const char *what() const throw() {
+        return _value.c_str();
+    }
+};
+}
+
 #endif // EXPECTIONS_HPP

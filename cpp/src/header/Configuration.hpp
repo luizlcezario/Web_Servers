@@ -8,25 +8,29 @@
 #include "utils.hpp"
 #include "Server.hpp"
 #include "Exceptions.hpp"
-
+#include "SocketServer.hpp"
+#include "WebServer.hpp"
 
 namespace Config
 {
-   
+
     class Configuration
     {
     private:
         std::vector<Server *> _config;
-        void _populateServer(Server *server, std::string line);
         bool isError;
         bool isLocation;
+        std::string location;
+        void _populateServer(Server *server, std::string line);
 
     public:
         Configuration();
         ~Configuration();
         void loadFile(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile, Excp::BadLabel);
-        std::vector<Server *> getConfig();
-
+        WebServer createSockets();
+        const std::vector<Server *>& getConfig() const ;
     };
 };
+
+std::ostream &operator<<(std::ostream &os, const Config::Configuration &config);
 #endif // CONFIGURATION_HPP

@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include "utils.hpp"
 #include "Exceptions.hpp"
+#include "Routes.hpp"
+
 #define SLABEL "server"
 #define ERRORLABEL "error_pages"
 #define LOCALABEL "routes"
@@ -20,38 +22,38 @@
 
 
 namespace Config {
-    struct s_router {
-        std::map<std::string, std::string> config;
-    };
-
+  
      class Server {
         private:
-            // struct sockaddr_in server_addr = {};
-           
-
-            std::map<std::string, struct s_router> locations;
+            std::map<std::string, Routes *> locations;
+            std::map<int, std::string> errorPages;
+            std::map<std::string, std::string> config;
+            std::vector<std::string> serverName;
+            std::vector<std::string> port;
+            std::vector<std::string> index;
+            std::string root;
+            int timeout;
+            int clientMaxBodySize;
             void _parseErrorPages(std::string value);
             template <typename T>
             std::vector<T> _parseArray(std::string value);
             
             
         public:
-            std::map<int, std::string> errorPages;
-            std::map<std::string, std::string> config;
-            std::vector<std::string> serverName;
-            std::vector<int> port;
-            std::string root;
-            std::vector<std::string> index;
-            int timeout;
-            int clientMaxBodySize;
 
             Server();
             ~Server();
-            std::map<int, std::string> getErrorPages();
+            const std::map<int, std::string>& getErrorPages() const;
+            const std::map<std::string, std::string>& getConfig() const;
+            const std::map<std::string, Routes *>& getLocations() const;
+            const std::vector<std::string>& getServerName() const;
+            const std::vector<std::string>& getPort() const;
+            const std::string& getRoot() const;
+            const std::vector<std::string>& getIndex() const;
+            int getTimeout() const;
+            int getClientMaxBodySize() const;
             void setErrorPages(int code, std::string path);
-            std::map<std::string, std::string> getConfig();
             void setConfig(std::string key, std::string value);
-            std::map<std::string, struct s_router> getLocations();
             void setLocationsConfig(std::string location, std::string key, std::string  value);
             void parseConfig();
     };

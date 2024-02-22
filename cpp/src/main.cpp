@@ -2,10 +2,15 @@
 #include <fstream>
 #include <cstdio>
 #include <Configuration.hpp>
+#include <SocketServer.hpp>
+#include <WebServer.hpp>
+#define MAX_EVENTS 10
+
 
 int main(int argc, char *argv[])
 {
 	Config::Configuration config;
+	WebServer webserver;
 
 	std::string path = "./configuration/server.toml";
 	if (argc != 2)
@@ -20,13 +25,15 @@ int main(int argc, char *argv[])
 		std::fclose(file);
 	}
 	else
-	{
 		path = argv[1];
-	}
 	try
 	{
 		std::cout << "Loading file: " << path << std::endl;
 		config.loadFile(path);
+		std::cout << config;
+		webserver = config.createSockets();
+		std::cout << "Start Server:" << path << std::endl;
+		webserver.start();
 	}
 	catch (const std::exception &e)
 	{
