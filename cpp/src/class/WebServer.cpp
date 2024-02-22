@@ -58,6 +58,7 @@ int WebServer::_eppollWait() {
             }
             else
             {
+                buffer[bytes_received] = '\0';
                 std::cout << "Received: " << buffer << std::endl;
                 const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nHello, World!";
                 int bytes_sent = send(client_fd, response, strlen(response), 0);
@@ -76,6 +77,8 @@ int WebServer::_eppollWait() {
     }
     return 1;
 }
+
+
 
 void WebServer::start() {
     _epoll_fd = epoll_create1(0);
