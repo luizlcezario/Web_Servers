@@ -15,6 +15,11 @@ namespace Config
         return false;
     }
 
+    const std::string &SocketServer::getIpV4() const
+    {
+        return ipV4;
+    }
+
     std::string SocketServer::getFullIp(std::string ip) {
         std::vector<std::string> ips = utils::split(ip, ":");
         if (ips.size() == 2) {
@@ -42,6 +47,7 @@ namespace Config
         std::vector<std::string> ips = utils::split(ip, ":");
         port = atoi(ips[1].c_str());
         ipV4 = ips[0];
+        std::cout << "Port: " << port << " Ip: " << ipV4 << std::endl;
         if (!ISROOT && port < 1024)
             throw Excp::SocketCreation("You must be root to use port < 1024");
         this->createSocket();
@@ -103,7 +109,7 @@ namespace Config
         }
     }
 
-    epoll_event SocketServer::getEv() const {
+    epoll_event *SocketServer::getEv() const {
         return _ev;
     }
     void SocketServer::setEv(uint32_t event, int fd) {
@@ -114,7 +120,7 @@ namespace Config
     void SocketServer::addEpollFd(int epoll_fd) {
         _ev->events = EPOLLIN;
         _ev->data.fd = listen_fd;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , &_ev) == -1)
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , _ev) == -1)
         {
             throw Excp::EpollCreation("Failed to add socket to epoll set");
         }

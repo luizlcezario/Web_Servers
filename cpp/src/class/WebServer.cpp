@@ -29,9 +29,10 @@ int WebServer::_eppollWait() {
     if (num_events < 0)
         throw Excp::EpollCreation("Failed to wait for events");
     for (int i = 0; i < num_events; ++i) { 
+        Config::SocketServer *socket;
         int client_fd = _events[i].data.fd;
         if(_sockets.find(client_fd) != _sockets.end()) {
-            Config::SocketServer *socket = _sockets[client_fd];
+            socket = _sockets[client_fd];
             int conn_sock = accept(socket->getListenFd(), (struct sockaddr *)NULL, NULL);
                 if (conn_sock == -1) {
                     perror("accept");
@@ -43,7 +44,7 @@ int WebServer::_eppollWait() {
                     return 1;
                 }
         } else {
-            std::cout << "Event on client  "<< socket->getListenFd() << client_fd << std::endl;
+            std::cout << "Event on client  "<< socket->getIpV4() << client_fd << std::endl;
             char buffer[1024];
             memset(buffer, 0, sizeof(buffer));
             int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);

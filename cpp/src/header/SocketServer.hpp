@@ -33,6 +33,7 @@ namespace Config
         ~SocketServer();
         void addServer(Server *server);
         int getListenFd() const;
+        const std::string &getIpV4() const;
         epoll_event* getEv() const;
         void setEv(uint32_t event, int fd);
         void addEpollFd(int epoll_fd);
