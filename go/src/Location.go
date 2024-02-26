@@ -2,6 +2,7 @@ package WebServer
 
 import (
 	"errors"
+	"net/http"
 	"strings"
 )
 
@@ -20,6 +21,13 @@ func (l *Location) AddNewLine(line string) error {
 	}
 	l.configs[strings.TrimSpace(split[0])] = strings.Trim(strings.TrimSpace(split[1]), "\"")
 	return nil
+}
+
+func (l *Location) handler(w http.ResponseWriter, r *http.Request) {
+	l.Print()
+	if _, e := w.Write([]byte("Hello, World!")); e != nil {
+		println(e)
+	}
 }
 
 func (l *Location) Print() {

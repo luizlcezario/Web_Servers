@@ -14,7 +14,7 @@ client_max_body_size = "10M"
 # First server for a host:port becomes the default
 [[server]]
 listen = "172.18.42.184:6000"
-server_name = "localhost"
+server_name = "llima-ce.42.fr"
 client_max_body_size = "10K"
 # Route configurations
 [server.routes."/"]
@@ -31,7 +31,7 @@ cgi_extension = ".cgi"
 
 [[server]]
 listen = 80
-server_name = ["llima-ce.42.fr", "www.localhost"]
+server_name = ["llima-ce.42.fr", "localhost"]
 root = "./server/llima-ce"
 index = "index2.html"
 error_pages = {404 = "custom_404.html", 405 = "custom_405.html"}

@@ -2,12 +2,14 @@ package WebServer
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 )
 
 type WebServer struct {
-	servers []*Server
+	servers      []*Server
+	serverMapped map[string][]*Server
 }
 
 func NewWebServer(filename string) (*WebServer, error) {
@@ -26,7 +28,6 @@ func NewWebServer(filename string) (*WebServer, error) {
 				continue
 			}
 			if strings.HasPrefix(line, "[[") && strings.HasSuffix(line, "]]") && strings.Contains(line, "server") {
-				println(line)
 				if server != nil {
 					isErrorPage = false
 					location = ""
@@ -41,7 +42,42 @@ func NewWebServer(filename string) (*WebServer, error) {
 			}
 		}
 		servers = append(servers, server)
-		return &WebServer{servers: servers}, nil
+		return &WebServer{servers: servers, serverMapped: make(map[string][]*Server)}, nil
+	}
+}
+
+func (s *WebServer) Start() {
+	for _, server := range s.servers {
+		addrs := getAddrs(server)
+		for _, addr := range addrs {
+			println("addr test:", addr)
+		}
+		for _, addr := range addrs {
+			if _, existe := s.serverMapped[addr]; existe == false {
+				s.serverMapped[addr] = []*Server{server}
+			} else {
+				s.serverMapped[addr] = append(s.serverMapped[addr], server)
+			}
+		}
+	}
+	for key, value := range s.serverMapped {
+		println("start server on key:", key, "value:", value)
+		go startWebServer(key, value)
+	}
+
+	select {}
+}
+
+func startWebServer(addr string, servers []*Server) {
+	mux := http.NewServeMux()
+	for _, server := range servers {
+		for key, location := range server.locations {
+			mux.Handle(key, server.middleware(http.HandlerFunc(location.handler)))
+		}
+	}
+	err := http.ListenAndServe(addr, mux)
+	if err != nil {
+		panic(err)
 	}
 }
 

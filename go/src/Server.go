@@ -1,6 +1,10 @@
 package WebServer
 
 import (
+	"log"
+	"net"
+	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -24,9 +28,12 @@ func NewServer() *Server {
 }
 
 func convertToSliceOfString(input string) []string {
+	input = strings.TrimSpace(input)
 	input = strings.Trim(input, "[]")
-	input = strings.Trim(input, " ")
 	split := strings.Split(input, ",")
+	for i, s := range split {
+		split[i] = strings.Trim(strings.TrimSpace(s), "\"")
+	}
 	return split
 }
 
@@ -37,7 +44,6 @@ func addConfig(s *Server, config []string) error {
 	switch config[0] {
 	case "timeout":
 		s.timeout, err = strconv.Atoi(config[1])
-		println(config[1], s.timeout)
 	case "client_max_body_size":
 		if strings.HasSuffix(config[1], "K") {
 			s.clientMaxBytes, err = strconv.Atoi(config[1][:len(config[1])-1])
@@ -50,7 +56,7 @@ func addConfig(s *Server, config []string) error {
 		s.root = config[1]
 	case "index":
 		s.index = convertToSliceOfString(config[1])
-	case "port":
+	case "listen":
 		s.port = convertToSliceOfString(config[1])
 	case "server_name":
 		s.serverName = convertToSliceOfString(config[1])
@@ -123,4 +129,61 @@ func (s *Server) Print() {
 		println(key)
 		value.Print()
 	}
+}
+
+func isValidIPPort(ipPort string) bool {
+	host, portStr, err := net.SplitHostPort(ipPort)
+	if err != nil {
+		println("Error:", err, host, portStr)
+		return false
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port < 0 || port > 65535 {
+		return false
+	}
+	return true
+}
+
+func getAddrs(server *Server) []string {
+	var addrs []string
+	if len(server.port) == 0 {
+		server.port = append(server.port, "0.0.0.0:80")
+	}
+	for _, port := range server.port {
+		if matched, _ := regexp.MatchString(`^(\d{1,3}\.){3}\d{1,3}:\d{1,5}$`, port); !matched {
+			if m, _ := regexp.MatchString(`^(\d{1,3}\.){3}\d{1,3}$`, port); m {
+				port += ":80"
+			} else if m, _ := regexp.MatchString(`^:?\d{1,5}$`, port); m {
+				port = "0.0.0.0:" + port
+			} else {
+				continue
+			}
+		}
+		if isValidIPPort(port) {
+			addrs = append(addrs, port)
+			println("Valid port:", port)
+		} else {
+			println("Invalid port:", port)
+		}
+
+	}
+	return addrs
+}
+
+func (s *Server) middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, serverName := range s.serverName {
+			println("serverName:", serverName, "r.Host:", r.Host)
+			if serverName == r.Host {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+		log.Printf("%s %s %s", r.Method, r.RequestURI, r.Host)
+		http.Error(w, "404 page not found", 404)
+	})
 }
