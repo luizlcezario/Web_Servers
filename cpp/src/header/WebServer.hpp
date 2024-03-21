@@ -13,7 +13,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <Request.hpp>
 
+using WebServer {
 
 class WebServer
 {
@@ -29,6 +31,8 @@ class WebServer
         ~WebServer();
         void addServerToSocket(std::string ip, Config::Server *server);
         void start();
+};
+
 };
 
 #endif

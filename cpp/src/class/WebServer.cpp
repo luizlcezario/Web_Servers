@@ -45,32 +45,13 @@ int WebServer::_eppollWait() {
                 }
         } else {
             std::cout << "Event on client  "<< socket->getIpV4() << client_fd << std::endl;
-            char buffer[1024];
-            memset(buffer, 0, sizeof(buffer));
-            int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-            if (bytes_received < 0)
-            {
-                std::cerr << "Failed to receive data from client" << std::endl;
+            try {
+                WebServer::Request req = Request::newRequest(client_fd);
+
+            } catch (Excp::ErrorRequest e) {
+                
             }
-            else if (bytes_received == 0)
-            {
-                std::cout << "Client disconnected" << std::endl;
-            }
-            else
-            {
-                buffer[bytes_received] = '\0';
-                std::cout << "Received: " << buffer << std::endl;
-                const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nHello, World!";
-                int bytes_sent = send(client_fd, response, strlen(response), 0);
-                if (bytes_sent < 0)
-                {
-                    std::cerr << "Failed to send data to client" << std::endl;
-                }
-                else
-                {
-                    std::cout << "Sent: " << response << std::endl;
-                }
-            }
+    
             close(client_fd);
             continue;
         }

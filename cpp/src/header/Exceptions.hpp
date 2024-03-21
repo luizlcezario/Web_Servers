@@ -94,6 +94,17 @@ class EpollCreation : public std::exception
         return _value.c_str();
     }
 };
+
+class ErrorRequest : public std::exception
+{
+    public:
+    std::string _fd;
+    ErrorRequest(std::string fd): std::exception(), _fd("Nothing recived from fd " + fd) {};
+     ~ErrorRequest() throw() {}
+   const char* what(void) const throw() {
+        return _fd.c_str();
+    };
+};
 }
 
 #endif // EXPECTIONS_HPP
