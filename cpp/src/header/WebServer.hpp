@@ -4,18 +4,19 @@
 #define MAX_EVENTS 10
 
 #include <SocketServer.hpp>
+#include <Request.hpp>
 #include <cstdio>
 #include <map>
 #include <Server.hpp>
 #include <iostream>
-#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <Request.hpp>
 
-using WebServer {
+namespace WebServer {
+
+class Request;
 
 class WebServer
 {
@@ -24,7 +25,12 @@ class WebServer
         std::map<int, Config::SocketServer *> _sockets;
         int _epoll_fd;
         int _eppollWait();
-        struct epoll_event _events[MAX_EVENTS];
+       
+        #ifdef __APPLE__
+            struct kevent _events[MAX_EVENTS];
+        #else 
+            struct epoll_event _events[MAX_EVENTS];
+        #endif
 
     public:
         WebServer();

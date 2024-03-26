@@ -36,14 +36,14 @@ namespace Config
         throw Excp::SocketCreation("Invalid format of IP please use 0.0.0.0:80 or 80 or 0.0.0.0");
     }
 
-    SocketServer::SocketServer() : servers(), listen_fd(0), server_addr() , port(ISROOT ? 80 : 8080), ipV4("0.0.0.0"), _ev(new epoll_event)
+    SocketServer::SocketServer() : servers(), listen_fd(0), server_addr() , port(ISROOT ? 80 : 8080), ipV4("0.0.0.0"), _ev(new  poll_event)
     {
         this->createSocket();
         this->bindSocket();
         this->listenSocket();
     }
 
-     SocketServer::SocketServer(std::string ip) : servers(), listen_fd(0), server_addr(), _ev(new epoll_event){
+     SocketServer::SocketServer(std::string ip) : servers(), listen_fd(0), server_addr(), _ev(new poll_event){
         std::vector<std::string> ips = utils::split(ip, ":");
         port = atoi(ips[1].c_str());
         ipV4 = ips[0];
@@ -74,14 +74,15 @@ namespace Config
         int opt = 1;
         if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         {
-            throw Excp::SocketBind("-1");
+            throw Excp::SocketBind("on Bindsocket setsocket");
         }
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = inet_addr(ipV4.c_str());
         server_addr.sin_port = htons(port);
+        
         if (bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
         {
-            throw Excp::SocketBind("-1");
+            throw Excp::SocketBind("SocketBind bind");
         }
     }
 
@@ -109,21 +110,41 @@ namespace Config
         }
     }
 
-    epoll_event *SocketServer::getEv() const {
+    poll_event *SocketServer::getEv() const {
         return _ev;
     }
     void SocketServer::setEv(uint32_t event, int fd) {
-        _ev->events = event;
-        _ev->data.fd = fd;
+        #ifdef __APPLE__
+            EV_SET(_ev, fd, event, EV_ADD, 0, 0, NULL);
+        #else
+            _ev->events = event;
+            _ev->data.fd = fd;
+        #endif
     }
 
     void SocketServer::addEpollFd(int epoll_fd) {
-        _ev->events = EPOLLIN;
-        _ev->data.fd = listen_fd;
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , _ev) == -1)
-        {
-            throw Excp::EpollCreation("Failed to add socket to epoll set");
-        }
-        
+        #ifdef __APPLE__
+            setEv(EVFILT_READ, listen_fd);
+            if (kevent(epoll_fd, _ev, 1, NULL, 0, NULL) == -1)
+                throw Excp::EpollCreation("Failed to add socket to epoll set");
+        #else
+            setEv(EPOLLIN, listen_fd);
+            if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , _ev) == -1)
+                throw Excp::EpollCreation("Failed to add socket to epoll set");
+        #endif
+    }
+
+
+    int SocketServer::resolveHostName() 
+    {
+        // struct addrinfo *res;
+        // for (std::map<int, Config::Server *>::iterator it = socketServer->servers; it != socketServer->servers.end(); it++) {
+        //     int result = getaddrinfo(it->first.c_str(), NULL, NULL, &res);
+        //     std::cout << "Result: " << result->ai_canonname << std::endl;
+        //     if (result == 0) {
+        //         freeaddrinfo(res);
+        //     }
+        // }
+        return 1;
     }
 } // namespace Config

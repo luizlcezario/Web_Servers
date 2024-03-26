@@ -1,6 +1,7 @@
 #include <Configuration.hpp>
 
 
+
 Config::Configuration::Configuration() : isError(false), isLocation(false), location("")
 {
 }
@@ -87,12 +88,12 @@ void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOp
     }
 }
 
-WebServer Config::Configuration::createSockets(){
-    WebServer webServer;
+WebServer::WebServer *Config::Configuration::createSockets(){
+    WebServer::WebServer *webServer = new WebServer::WebServer();
      for (std::vector<Config::Server *>::const_iterator server = _config.begin(); server != _config.end(); server++) {
         std::vector<std::string> port = (*server)->getPort();
         for (std::vector<std::string>::iterator ipPort = port.begin(); ipPort != port.end(); ipPort++) {
-            webServer.addServerToSocket(SocketServer::getFullIp(*ipPort), *server);
+            webServer->addServerToSocket(SocketServer::getFullIp(*ipPort), *server);
         }
     }
     return webServer;

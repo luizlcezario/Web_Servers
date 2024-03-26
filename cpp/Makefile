@@ -2,14 +2,14 @@ NAME			=	webserver
 UNITEST			=	unitest
 CC				=	c++
 
-CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3
+CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3 -fsanitize=address
 CFLAGSTEST 		= 	-g3 -std=c++11
 
 HEADER			=	-I src/header
 
 HEADER_TEST 	=	-I test/header
 
-CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp
+CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp Request.cpp
  
 UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp split.cpp
 

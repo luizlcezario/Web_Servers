@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
 	Config::Configuration config;
-	WebServer webserver;
+	WebServer::WebServer *webserver = NULL;
 
 	std::string path = "./configuration/server.toml";
 	if (argc != 2)
@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
 		std::cout << config;
 		webserver = config.createSockets();
 		std::cout << "Start Server:" << path << std::endl;
-		webserver.start();
+		webserver->start();
+		delete webserver;
 	}
 	catch (const std::exception &e)
 	{

@@ -13,7 +13,7 @@ client_max_body_size = "10M"
 
 # First server for a host:port becomes the default
 [[server]]
-listen = "172.18.42.184:6000"
+listen = "127.0.0.1:2000"
 server_name = "localhost"
 client_max_body_size = "10K"
 # Route configurations
@@ -30,7 +30,7 @@ allow_methods = ["GET", "POST"]
 cgi_extension = ".cgi"
 
 [[server]]
-listen = 80
+listen = 8001
 server_name = ["llima-ce.42.fr", "www.localhost"]
 root = "./server/llima-ce"
 index = "index2.html"

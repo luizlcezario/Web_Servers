@@ -27,7 +27,7 @@ namespace Config
         Configuration();
         ~Configuration();
         void loadFile(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile, Excp::BadLabel);
-        WebServer createSockets();
+        WebServer::WebServer *createSockets();
         const std::vector<Server *>& getConfig() const ;
     };
 };

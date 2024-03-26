@@ -1,6 +1,15 @@
 #ifndef SOCKETSERVER_HPP
 #define SOCKETSERVER_HPP
-#include <sys/epoll.h>
+
+
+
+#ifdef __APPLE__
+    #include <sys/types.h>
+    #include <sys/event.h>
+    #include <sys/time.h>
+#else 
+    # include <sys/epoll.h>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -12,8 +21,11 @@
 
 namespace Config
 {
-
-    typedef struct epoll_event epoll_event;
+    #ifdef __APPLE__
+        typedef struct kevent poll_event;
+    #else
+        typedef struct epoll_event poll_event;
+    #endif
     class SocketServer
     {
     private:
@@ -22,7 +34,8 @@ namespace Config
         struct sockaddr_in server_addr;
         int port;
         std::string ipV4;
-        epoll_event *_ev;
+        poll_event *_ev;
+
         void createSocket();
         void bindSocket();
         void listenSocket();
@@ -34,9 +47,10 @@ namespace Config
         void addServer(Server *server);
         int getListenFd() const;
         const std::string &getIpV4() const;
-        epoll_event* getEv() const;
+        poll_event* getEv() const;
         void setEv(uint32_t event, int fd);
         void addEpollFd(int epoll_fd);
+        int resolveHostName();
         static std::string getFullIp(std::string ip);
         
     };
