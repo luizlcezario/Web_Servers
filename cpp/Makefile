@@ -11,7 +11,7 @@ HEADER_TEST 	=	-I test/header
 
 CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp Request.cpp
  
-UTILS			= 	ends_with.cpp trim.cpp starts_with.cpp split.cpp
+UTILS			= 	ends_with.cpp trim.cpp strtokS.cpp starts_with.cpp split.cpp 
 
 SRC				=	main.cpp $(addprefix class/, $(CLASS)) $(addprefix utils/, $(UTILS))
 

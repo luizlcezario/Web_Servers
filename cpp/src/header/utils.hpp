@@ -18,6 +18,8 @@ namespace utils
 
     std::vector<std::string> split(const std::string &s,const std::string & delim = " ");
 
+    std::string strtokS(const std::string &str, const std::string &delim, size_t pos = 0);
+
     template <typename T, typename O>
     void printMap(std::ostream &os, std::map<T, O> map) {
         for (typename std::map<T, O>::iterator it = map.begin(); it != map.end(); it++) {

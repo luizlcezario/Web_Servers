@@ -1,11 +1,9 @@
 #include "Request.hpp"
-#include <sys/types.h>
-#include "Exceptions.hpp"
-WebServer::Request::Request(): body(""), host(""), path(""), method(GET) {}
+WebServer::Request::Request(): body(""), host(""), path(""), method(GET), body_length(0) ,content_type("") {}
 
-WebServer::Request::Request(std::string body, std::string host, std::string path, Methods method): body(body), host(host), path(path), method(method) {}
+WebServer::Request::Request(std::string body, std::string host, std::string path, Methods method): body(body), host(host), path(path), method(method), body_length(body.length()) ,content_type("")  {}
 
-WebServer::Methods WebServer::getMethod(std::string method) {
+WebServer::Methods WebServer::getMethodE(std::string method) {
     if (method == "GET")
         return GET;
     else if (method == "POST")
@@ -18,22 +16,58 @@ WebServer::Methods WebServer::getMethod(std::string method) {
 
 WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::SocketCreation) {
     char buffer[1024];
+    int bytes_received = 1024;
     std::string requestContent = "";
-    while (bytes_received > 0) {
+    while (bytes_received > 0 && bytes_received == 1024) {
         std::cout << "Receiving ... "  << std::endl;
         memset(buffer, 0, sizeof(buffer));
-        int bytes_received = recv(fd_request, buffer, sizeof(buffer) - 1, 0);
+        bytes_received = recv(fd_request, buffer, sizeof(buffer) - 1, 0);
         std::cout << "Received: " << bytes_received << std::endl;
+        buffer[bytes_received] = '\0';
         if (bytes_received < 0)
             throw Excp::ErrorRequest("error receiving data from client" + std::to_string(fd_request));
         else 
-            requestContent = requestContent.append(buffer, bytes_received);
+            requestContent.append(buffer, bytes_received);
     }
     Request req = Request();
-    std::string line = strtok(requestContent.c_str(), "\n");
-    req.method = strtok(line.c_str(), " ");
-    req.path = strtok(line, " ");
-    req.host = strtok(requestContent.c_str(), " ");
-    std::cout << "Method: " << req.method << std::endl;
+    int isBody = false;
+    std::vector<std::string> lines = utils::split(requestContent, "\n");
+    std::cout << "REQUEST: " << requestContent << std::endl;
+    for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); it++) {
+        std::string line = *it;
+        if (it == lines.begin()) {
+            req.method = getMethodE(utils::strtokS(line, " "));
+            req.path = utils::strtokS(line, " ", line.find(" ") + 1);
+        } else if (utils::starts_with(line, HOST)) {
+            req.host = utils::trim(line.substr(line.find(":") + 1));
+        } else if (utils::starts_with(line, CONTENT_LENGTH)) {
+            req.body_length = atoi(utils::trim(line.substr(line.find(":") + 1)).c_str());
+        } else if (utils::starts_with(line, CONTENT_TYPE)) {
+            req.content_type = utils::trim(line.substr(line.find(":") + 1));
+        } else if (line == "\r" || line == "\r\n" || line == "\n") {
+            isBody = true;
+        } else if (isBody) {
+            req.body += line;
+        }
+    }
+    std::cout << "REQUEST INFOS: " << req << std::endl;
     return req;
+}
+
+
+std::string WebServer::Request::getMethod() const {
+    if (method == GET)
+        return "GET";
+    else if (method == POST)
+        return "POST";
+    else if (method == DELETE)
+        return "DELETE";
+    else
+        return "UNKNOWN";
+}
+
+
+std::ostream &operator<<(std::ostream &os, const WebServer::Request &req) {
+    os << "Method: " << req.getMethod() << "\nPath: " << req.getPath() << "\nHost: " << req.getHost() << "\nBody: " << req.getBody() << std::endl;
+    return os;
 }

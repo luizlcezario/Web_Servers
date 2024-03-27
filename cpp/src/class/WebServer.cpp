@@ -56,11 +56,10 @@ int WebServer::WebServer::_eppollWait() {
             }
             std::cout << "Event on client coon: " << conn_sock << " "<< socket->getIpV4() << " " << client_fd << std::endl;
             try {
-                Request req = Request::newRequest(conn_sock)
-                std::cout << "Received: " << buffer << std::endl;
+                Request req = Request::newRequest(conn_sock);
                 const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nHello, World!\n\0";
                 int bytes_sent = send(conn_sock, response, strlen(response), 0);
-                if (bytes_sent <= 0)
+                if (bytes_sent < 0)
                 {
                     std::cerr << "Failed to send data to client" << strerror(errno) << std::endl;
                     close(conn_sock);
@@ -70,7 +69,7 @@ int WebServer::WebServer::_eppollWait() {
                     std::cout << "Sent: " << response << std::endl;
                 }
             } catch (Excp::ErrorRequest e) {
-                std::cerr << e.what() << std::endl;
+                std::cout << e.what() << std::endl;
             }
             close(conn_sock);
             socket = NULL;
