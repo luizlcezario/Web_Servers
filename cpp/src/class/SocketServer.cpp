@@ -54,7 +54,11 @@ namespace Config
         this->bindSocket();
         this->listenSocket();
     }
-
+    Server *getServer(std::string host) 
+    {
+        return servers[host];
+    }
+    
     SocketServer::~SocketServer()
     {
         delete _ev;

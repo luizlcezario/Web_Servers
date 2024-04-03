@@ -36,6 +36,13 @@ void WebServer::WebServer::start() {
     while (_eppollWait());
 }
 
+Config::WebServer verifyheaders(Request *req,Config::SocketServer *socket) throw(Excp::ErrorRequest) {
+    Config::Server *server = socket->getServer(req->host);
+    if (server == NULL)
+        throw Excp::ErrorRequest("Host not found");
+    
+
+}
 
 int WebServer::WebServer::_eppollWait() {
     static Config::SocketServer *socket = NULL;
@@ -57,6 +64,7 @@ int WebServer::WebServer::_eppollWait() {
             std::cout << "Event on client coon: " << conn_sock << " "<< socket->getIpV4() << " " << client_fd << std::endl;
             try {
                 Request req = Request::newRequest(conn_sock);
+                verifyheaders(&req, socket);
                 const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nHello, World!\n\0";
                 int bytes_sent = send(conn_sock, response, strlen(response), 0);
                 if (bytes_sent < 0)

@@ -47,6 +47,7 @@ namespace Config
         void addServer(Server *server);
         int getListenFd() const;
         const std::string &getIpV4() const;
+        Server *getServer(std::string host);
         poll_event* getEv() const;
         void setEv(uint32_t event, int fd);
         void addEpollFd(int epoll_fd);
