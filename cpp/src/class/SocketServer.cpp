@@ -54,9 +54,9 @@ namespace Config
         this->bindSocket();
         this->listenSocket();
     }
-    Server *getServer(std::string host) 
+    Server *SocketServer::getServer(std::string host) 
     {
-        return servers[host];
+        return this->servers[host];
     }
     
     SocketServer::~SocketServer()

@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <stdlib.h>
 WebServer::Request::Request(): body(""), host(""), path(""), method(GET), body_length(0) ,content_type("") {}
 
 WebServer::Request::Request(std::string body, std::string host, std::string path, Methods method): body(body), host(host), path(path), method(method), body_length(body.length()) ,content_type("")  {}
@@ -25,7 +26,7 @@ WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::So
         std::cout << "Received: " << bytes_received << std::endl;
         buffer[bytes_received] = '\0';
         if (bytes_received < 0)
-            throw Excp::ErrorRequest("error receiving data from client" + std::to_string(fd_request));
+            throw Excp::ErrorRequest("error receiving data from client ");
         else 
             requestContent.append(buffer, bytes_received);
     }
@@ -50,7 +51,7 @@ WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::So
             req.body += line;
         }
     }
-    std::cout << "REQUEST INFOS: " << req << std::endl;
+    std::cout << "+++++++++++++REQUEST INFOS: +++++++++" << std::endl << req  ;
     return req;
 }
 

@@ -121,10 +121,10 @@ int WebServer::WebServer::_eppollWait() {
         } else {
             std::cout << "Event on client  "<< socket->getIpV4() << client_fd << std::endl;
             try {
-                WebServer::Request req = Request::newRequest(client_fd);
+                Request req = Request::newRequest(client_fd);
 
-            } catch (Excp::ErrorRequest e) {
-                
+            } catch (Excp::ErrorRequest& e) {
+                std::cout << e.what() << std::endl;
             }
     
             close(client_fd);
