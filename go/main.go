@@ -14,7 +14,7 @@ func main() {
 	} else {
 		filename = os.Args[1]
 	}
-	fmt.Println("Using configuration file:", filename)
+	fmt.Println("Usin `configuration file:", filename)
 	webserver, e := WebServer.NewWebServer(filename)
 	if e != nil {
 		fmt.Println(e)
