@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
 	WebServer::WebServer *webserver = NULL;
 
 	std::string path = "./configuration/server.toml";
+	std::string mimeType = "./configuration/mimeType.toml";
 	if (argc != 2)
 	{
 		FILE *file = std::fopen(path.c_str(), "r");
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		std::cout << "Loading file: " << path << std::endl;
+		config.loadMimeTypes(mimeType);
 		config.loadFile(path);
 		std::cout << config;
 		webserver = config.createSockets();

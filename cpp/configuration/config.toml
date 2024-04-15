@@ -4,7 +4,6 @@ server_name = ["www.localhost", "localhost"]
 root = "server_root"
 index = ["index.html","index.php"]
 error_page = {404 = "custom_404.html", 405 = "custom_405.html"}
-timeout = 50000
 client_max_body_size = "10M"
 cgi = [".php", "php-cgi", ".py", "python3"]
 

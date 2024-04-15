@@ -2,7 +2,7 @@
 namespace Config {
 
     template <>
-    std::vector<int> Server::_parseArray<int>(std::string value) {
+    std::vector<int> _parseArray<int>(std::string value) {
         std::string line = utils::trim(value, "[]");
         std::vector<std::string> array = utils::split(line, ",");
         std::vector<int> result;
@@ -14,7 +14,7 @@ namespace Config {
 
     // Especialização para std::string
     template <>
-    std::vector<std::string> Server::_parseArray<std::string>(std::string value) {
+    std::vector<std::string> _parseArray<std::string>(std::string value) {
         std::string line = utils::trim(value, "[]");
         std::vector<std::string> array = utils::split(line, ",");
         std::vector<std::string> result;
@@ -24,7 +24,7 @@ namespace Config {
         return result;
     };
    
-    Server::Server() : locations(), errorPages(), config(), serverName(), port(), index(), root(""), timeout(0), clientMaxBodySize(0){
+    Server::Server() : locations(), errorPages(), config(), serverName(), port(), index(), root(""), clientMaxBodySize(0){
     }
 
     Server::~Server() {
@@ -60,10 +60,6 @@ namespace Config {
         return index;
     }
 
-    int Server::getTimeout() const{
-        return timeout;
-    }
-
     int Server::getClientMaxBodySize() const{
         return clientMaxBodySize;
     }
@@ -72,8 +68,8 @@ namespace Config {
         config[key] = value;
     }
 
-    const std::map<std::string, Config::Routes *>& Server::getLocations() const{
-        return locations;
+    Config::Routes* Server::getLocations(std::string str){
+        return locations[str];
     }
 
     void Server::setLocationsConfig(std::string location, std::string key, std::string value) {
@@ -93,11 +89,9 @@ namespace Config {
             } else if (key == LISTENLB) {
                 port = _parseArray<std::string>(it->second);
             } else if (key == ROOTLB) {
-                root = it->second;
+                root = utils::trim(it->second, "\"");
             } else if (key == INDEXLB) {
                 index = _parseArray<std::string>(it->second);
-            } else if (key == TIMEOUTLB) {
-                timeout = atoi(it->second.c_str());
             } else if (key == MBSIZELB) {
                 clientMaxBodySize = atoi(utils::trim(it->second, "\"MK").c_str());
                 if (it->second.find("M") != std::string::npos) {
@@ -124,6 +118,15 @@ namespace Config {
     }
 
 } 
+
+void Config::Server::setMimeType(std::map<std::string, std::string> *mimeTypes) {
+    this->mimeTypes = mimeTypes;
+}
+
+std::string Config::Server::getMimeType(std::string key) {
+    return (*mimeTypes)[key];
+}
+
 std::ostream &operator<<(std::ostream &os, const Config::Server &server) {
     os << "++++++++++ NOVO SERVER +++++++++++++++" << std::endl;
     os << "+++ Config +++" << std::endl;
@@ -138,14 +141,12 @@ std::ostream &operator<<(std::ostream &os, const Config::Server &server) {
     os << server.getRoot() << std::endl;
     os << "+++ INDEX +++" << std::endl;
     utils::printVector(os, server.getIndex());
-    os << "+++ TIMEOUT +++" << std::endl;
-    os << server.getTimeout() << std::endl;
     os << "+++ CLIENT MAX BODY SIZE +++" << std::endl;
     os << server.getClientMaxBodySize() << std::endl;
     os << "+++ LOCATIONS +++" << std::endl;
-    for (std::map<std::string, Config::Routes *>::const_iterator it = server.getLocations().begin(); it != server.getLocations().end(); it++) {
-        os << "Location: " << it->first << std::endl << *(it->second) << std::endl;
-    }
+    // for (std::map<std::string, Config::Routes *>::const_iterator it = server.begin(); it != server.getLocations().end(); it++) {
+    //     os << "Location: " << it->first << std::endl << *(it->second) << std::endl;
+    // }
     return os;
 }
 // namespace Config

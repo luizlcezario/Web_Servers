@@ -37,6 +37,7 @@ class WebServer
         ~WebServer();
         void addServerToSocket(std::string ip, Config::Server *server);
         void start();
+        void verifyheaders(Request *req, Config::SocketServer *socket) throw(Excp::ErrorRequest);
 };
 
 };

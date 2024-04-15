@@ -36,12 +36,17 @@ void WebServer::WebServer::start() {
     while (_eppollWait());
 }
 
-Config::WebServer verifyheaders(Request *req,Config::SocketServer *socket) throw(Excp::ErrorRequest) {
-    Config::Server *server = socket->getServer(req->host);
+void WebServer::WebServer::verifyheaders(Request *req, Config::SocketServer *socket) throw(Excp::ErrorRequest) {
+    Config::Server *server = socket->getServer(req->getHost());
     if (server == NULL)
         throw Excp::ErrorRequest("Host not found");
-    
-
+    if (req->getBodyLength() > server->getClientMaxBodySize()) 
+        throw Excp::ErrorRequest("Body size too large");
+    Config::Routes *location = server->getLocations(req->getPath());
+    if (location == NULL && server->getRoot() == "")
+        throw Excp::ErrorRequest("Location not found");
+    req->setServer(server);
+    req->setRoute(location);
 }
 
 int WebServer::WebServer::_eppollWait() {
@@ -65,24 +70,16 @@ int WebServer::WebServer::_eppollWait() {
             try {
                 Request req = Request::newRequest(conn_sock);
                 verifyheaders(&req, socket);
-                const char *response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nHello, World!\n\0";
-                int bytes_sent = send(conn_sock, response, strlen(response), 0);
-                if (bytes_sent < 0)
-                {
-                    std::cerr << "Failed to send data to client" << strerror(errno) << std::endl;
-                    close(conn_sock);
-                }
-                else
-                {
-                    std::cout << "Sent: " << response << std::endl;
-                }
+                Response *res = req.execute();
+                res->execute();
+                res->sendResponse(conn_sock);
+                delete res;
             } catch (Excp::ErrorRequest e) {
                 std::cout << e.what() << std::endl;
             }
             close(conn_sock);
             socket = NULL;
             conn_sock = -1;
-            continue;
         }
     }
     return 1;

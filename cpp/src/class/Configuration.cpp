@@ -45,6 +45,38 @@ void Config::Configuration::_populateServer(Config::Server *server, std::string 
     }
 }
 
+void Config::Configuration::loadMimeTypes(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile) {
+    std::ifstream config_file(filename.c_str());
+    std::string line;
+
+    if (!utils::ends_with(filename, ".toml"))
+        throw Excp::WrongFile(filename);
+    if (!config_file.is_open())
+        throw Excp::FileNotOpen(filename);
+    while (std::getline(config_file, line))
+    {
+        if (line.find("#") != std::string::npos)
+            line = line.substr(0, line.find("#"));
+        if (line.empty())
+            continue;
+        line = utils::trim(line);
+        if (utils::starts_with(line, "[[") || utils::starts_with(line, "[")) {
+            line = utils::trim(utils::trim(line, "[]"));
+            if (line == MIMETYPES) {
+                continue ;
+            }
+            throw Excp::BadLabel(line);
+        }
+        if (line.find("=")) {
+            std::string key = utils::trim(line.substr(0, line.find("=")), " \t\r\n \"");
+            std::vector<std::string> value = _parseArray<std::string>(utils::trim(line.substr(line.find("=") + 1)));
+            for (std::vector<std::string>::iterator it = value.begin(); it != value.end(); it++) {
+                mimeTypes[*it] = key;
+            }
+        }
+    }
+}
+
 
 void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile, Excp::BadLabel)
 {
@@ -68,6 +100,7 @@ void Config::Configuration::loadFile(std::string filename) throw(Excp::FileNotOp
             if (line == SLABEL) {
                 if (server != NULL) {
                     server->parseConfig();
+                    server->setMimeType(&mimeTypes);
                     _config.push_back(server);
                     isError = false;
                     isLocation = false;

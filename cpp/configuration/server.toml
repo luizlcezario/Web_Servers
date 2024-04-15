@@ -17,7 +17,6 @@ listen = "127.0.0.1:2000"
 server_name = "localhost"
 client_max_body_size = "10K"
 # Route configurations
-[server.routes."/"]
 root = "./server/localhost"
 index = "index.html"
 
@@ -35,7 +34,6 @@ server_name = ["llima-ce.42.fr", "www.localhost"]
 root = "./server/llima-ce"
 index = "index2.html"
 error_pages = {404 = "custom_404.html", 405 = "custom_405.html"}
-timeout = 50000
 client_max_body_size = 100
 
 

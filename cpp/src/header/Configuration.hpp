@@ -17,6 +17,7 @@ namespace Config
     class Configuration
     {
     private:
+        std::map<std::string, std::string> mimeTypes;
         std::vector<Server *> _config;
         bool isError;
         bool isLocation;
@@ -28,6 +29,7 @@ namespace Config
         ~Configuration();
         void loadFile(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile, Excp::BadLabel);
         WebServer::WebServer *createSockets();
+        void loadMimeTypes(std::string filename) throw(Excp::FileNotOpen, Excp::WrongFile);
         const std::vector<Server *>& getConfig() const ;
     };
 };

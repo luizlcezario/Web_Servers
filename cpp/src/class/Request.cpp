@@ -1,8 +1,8 @@
 #include "Request.hpp"
 #include <stdlib.h>
-WebServer::Request::Request(): body(""), host(""), path(""), method(GET), body_length(0) ,content_type("") {}
+WebServer::Request::Request(): body(""), host(""), path(""), method(GET), body_length(0) ,content_type(""), strRoute(""), server(NULL), route(NULL) {}
 
-WebServer::Request::Request(std::string body, std::string host, std::string path, Methods method): body(body), host(host), path(path), method(method), body_length(body.length()) ,content_type("")  {}
+WebServer::Request::Request(std::string body, std::string host, std::string path, Methods method): body(body), host(host), path(path), method(method), body_length(body.length()) ,content_type("") , strRoute(""), server(NULL), route(NULL) {}
 
 WebServer::Methods WebServer::getMethodE(std::string method) {
     if (method == "GET")
@@ -41,6 +41,7 @@ WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::So
             req.path = utils::strtokS(line, " ", line.find(" ") + 1);
         } else if (utils::starts_with(line, HOST)) {
             req.host = utils::trim(line.substr(line.find(":") + 1));
+            req.host = req.host.substr(0, req.host.find(":"));
         } else if (utils::starts_with(line, CONTENT_LENGTH)) {
             req.body_length = atoi(utils::trim(line.substr(line.find(":") + 1)).c_str());
         } else if (utils::starts_with(line, CONTENT_TYPE)) {
@@ -71,4 +72,10 @@ std::string WebServer::Request::getMethod() const {
 std::ostream &operator<<(std::ostream &os, const WebServer::Request &req) {
     os << "Method: " << req.getMethod() << "\nPath: " << req.getPath() << "\nHost: " << req.getHost() << "\nBody: " << req.getBody() << std::endl;
     return os;
+}
+
+WebServer::Response* WebServer::Request::execute() {
+    ResponseStatic *res =  new ResponseStatic(server, route);
+    res->createPath(this->getServer()->getRoot(), this->getServer()->getIndex()[0], this->getPath(), this->getStrRoute());
+    return res;
 }
