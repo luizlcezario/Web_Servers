@@ -31,6 +31,7 @@ WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::So
             requestContent.append(buffer, bytes_received);
     }
     Request req = Request();
+    std::cout << "REQUEST: " << requestContent << std::endl;
     int isBody = false;
     std::vector<std::string> lines = utils::split(requestContent, "\n");
     std::cout << "REQUEST: " << requestContent << std::endl;
@@ -74,8 +75,22 @@ std::ostream &operator<<(std::ostream &os, const WebServer::Request &req) {
     return os;
 }
 
+
+void WebServer::Request::verifyheaders(Config::SocketServer *socket) throw(Excp::ErrorRequest) {
+    Config::Server *server = socket->getServer(getHost());
+    if (server == NULL)
+        throw Excp::ErrorRequest("Host not found");
+    if (getBodyLength() > server->getClientMaxBodySize()) 
+        throw Excp::ErrorRequest("Body size too large");
+    Config::Routes *location = server->getLocations(getPath());
+    if (location != NULL && server->getRoot() == "")
+        throw Excp::ErrorRequest("Location not found");
+    setServer(server);
+    setRoute(location);
+}
+
 WebServer::Response* WebServer::Request::execute() {
-    ResponseStatic *res =  new ResponseStatic(server, route);
-    res->createPath(this->getServer()->getRoot(), this->getServer()->getIndex()[0], this->getPath(), this->getStrRoute());
+    ResponseStatic *res =  new ResponseStatic(server, route, this->getPath(), this->getStrRoute()); 
+    
     return res;
 }

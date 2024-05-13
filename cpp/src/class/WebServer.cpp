@@ -36,18 +36,6 @@ void WebServer::WebServer::start() {
     while (_eppollWait());
 }
 
-void WebServer::WebServer::verifyheaders(Request *req, Config::SocketServer *socket) throw(Excp::ErrorRequest) {
-    Config::Server *server = socket->getServer(req->getHost());
-    if (server == NULL)
-        throw Excp::ErrorRequest("Host not found");
-    if (req->getBodyLength() > server->getClientMaxBodySize()) 
-        throw Excp::ErrorRequest("Body size too large");
-    Config::Routes *location = server->getLocations(req->getPath());
-    if (location == NULL && server->getRoot() == "")
-        throw Excp::ErrorRequest("Location not found");
-    req->setServer(server);
-    req->setRoute(location);
-}
 
 int WebServer::WebServer::_eppollWait() {
     static Config::SocketServer *socket = NULL;
@@ -69,7 +57,7 @@ int WebServer::WebServer::_eppollWait() {
             std::cout << "Event on client coon: " << conn_sock << " "<< socket->getIpV4() << " " << client_fd << std::endl;
             try {
                 Request req = Request::newRequest(conn_sock);
-                verifyheaders(&req, socket);
+                req.verifyheaders(socket);
                 Response *res = req.execute();
                 res->execute();
                 res->sendResponse(conn_sock);

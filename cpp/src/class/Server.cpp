@@ -92,7 +92,11 @@ namespace Config {
                 root = utils::trim(it->second, "\"");
             } else if (key == INDEXLB) {
                 index = _parseArray<std::string>(it->second);
-            } else if (key == MBSIZELB) {
+            } else if (key == AUTOINDEXLB) {
+                autoindex = it->second == "on" ? true : false;
+            } else if (key == REDIRLB) {
+                redirection = it->second;
+            }else if (key == MBSIZELB) {
                 clientMaxBodySize = atoi(utils::trim(it->second, "\"MK").c_str());
                 if (it->second.find("M") != std::string::npos) {
                     clientMaxBodySize *= 1024 * 1024;

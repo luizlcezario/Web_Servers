@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sys/types.h>
 #include "Response.hpp"
+#include <SocketServer.hpp>
 
 #define HOST "Host"
 #define CONTENT_LENGTH "Content-Length"
@@ -26,15 +27,15 @@ namespace WebServer {
 
     class Request {
         private:
-        std::string body;
-        std::string host;
-        std::string path;
-        Methods method;
-        int body_length;
-        std::string content_type;
-        std::string    strRoute;
-        Config::Server *server;
-        Config::Routes *route;
+        std::string     body;
+        std::string     host;
+        std::string     path;
+        Methods         method;
+        int             body_length;
+        std::string     content_type;
+        std::string     strRoute;
+        Config::Server  *server;
+        Config::Routes  *route;
 
         public:
         Request();
@@ -43,6 +44,7 @@ namespace WebServer {
         std::string getHost() const { return host; }
         int getBodyLength() const { return body_length; }
         std::string getPath() const { return path; }
+        void verifyheaders(Config::SocketServer *socket) throw(Excp::ErrorRequest);
         std::string getStrRoute() const { return strRoute; }
         std::string getMethod() const;
         void setServer(Config::Server *server) { this->server = server; }

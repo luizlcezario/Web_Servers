@@ -19,6 +19,8 @@
 #define INDEXLB "index" 
 #define MBSIZELB "client_max_body_size"
 #define CGILB "cgi"
+#define AUTOINDEXLB "autoindex"
+#define REDIRLB "redirection"
 
 
 namespace Config {
@@ -35,6 +37,8 @@ namespace Config {
             std::vector<std::string> port;
             std::vector<std::string> index;
             std::string root;
+            bool autoindex;
+            std::string redirection;
             int clientMaxBodySize;
             void _parseErrorPages(std::string value);
             

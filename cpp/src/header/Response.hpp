@@ -41,15 +41,18 @@ namespace WebServer
     class ResponseStatic : public Response
     {
         private:
+            std::string _path;
+            std::string _root;
+            std::vector<std::string> _index;
+            std::string _routeStr;
+            bool _autoindex;
             std::string _file;
+            
 
         public:
             ~ResponseStatic() {};
-            explicit ResponseStatic( Config::Server *server, Config::Routes *routes){
-                _server = server;
-                _routes = routes;
-            };
-            void createPath(std::string root, std::string index, std::string path, std::string route);
+            explicit ResponseStatic( Config::Server *server, Config::Routes *routes, std::string path, std::string root);
+            void createPath();
             void execute();
     };
     
