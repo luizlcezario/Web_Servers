@@ -31,7 +31,6 @@ WebServer::Request WebServer::Request::newRequest(int fd_request) throw(Excp::So
             requestContent.append(buffer, bytes_received);
     }
     Request req = Request();
-    std::cout << "REQUEST: " << requestContent << std::endl;
     int isBody = false;
     std::vector<std::string> lines = utils::split(requestContent, "\n");
     std::cout << "REQUEST: " << requestContent << std::endl;
