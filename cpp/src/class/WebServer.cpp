@@ -105,7 +105,6 @@ void WebServer::_eppollWait() {
                 EV_SET(_events, clientSocket, EVFILT_READ, EV_ADD, 0, 0, newConnection);
                 kevent(_epoll_fd, _events, 1, NULL, 0, NULL);
             }
-<<<<<<< HEAD
             continue;
         }
         if (_events[i].flags & EV_EOF) {
@@ -137,18 +136,6 @@ void WebServer::_eppollWait() {
 				delete connection;
                 connection = NULL;
 				continue;
-=======
-            std::cout << "Event on client coon: " << conn_sock << " "<< socket->getIpV4() << " " << client_fd << std::endl;
-            try {
-                Request req = Request::newRequest(conn_sock);
-                req.verifyheaders(socket);
-                Response *res = req.execute();
-                res->execute();
-                res->sendResponse(conn_sock);
-                delete res;
-            } catch (Excp::ErrorRequest e) {
-                std::cout << e.what() << std::endl;
->>>>>>> 3760ad90b636929ab0c9537fb5657cd24cf6ded0
             }
         }
     }
