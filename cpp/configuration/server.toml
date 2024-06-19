@@ -2,40 +2,138 @@
 
 # General server settings
 [[server]]
-listen = 8080                                  
-server_name = "localhost"
+listen = "8081"
+server_name = ["youtube.com"]
 client_max_body_size = "10M"
-
-# Default error pages
+root = "html"
 [server.error_pages]
-404 = "/404.html"
-500 = "/500.html"
+404 = "pages/errors/404.html"
+
+[server.routes."/"]
+allow_methods = ["GET", "POST"]
+index = "index.html"
+upload_directory = "/uploads"
+
+[server.routes."/pages/calculator"]
+allow_methods = ["GET"]
+index = "calculator.html"
+
+[server.routes."/pages/bitcoin"]
+allow_methods = ["GET"]
+index = "bitcoin.html"
+
+[server.routes."/pages/upload"]
+allow_methods = ["POST", "GET"]
+upload_directory = "/uploads"
+index = "upload.html"
+
+[server.routes."/uploads"]
+allow_methods = ["GET", "POST", "DELETE"]
+auto_index = "on"
+index = "posts.html"
+
+[server.routes."/42"]
+allow_methods = ["GET"]
+proxy_pass = "https://www.42sp.org.br"
+
+[server.routes."/cgi/post"]
+allow_methods = ["POST"]
+cgi = "sum.py"
+cgi_pass = ".py"
+
+[server.routes."/cgi/get"] 
+allow_methods = ["GET"]
+cgi = "bitcoin_value.py"
+cgi_pass = ".py"
 
 # First server for a host:port becomes the default
 [[server]]
-listen = "127.0.0.1:2000"
-server_name = "localhost"
-client_max_body_size = "10K"
-# Route configurations
-root = "./server/localhost"
-index = "index.html"
-
-[server.routes."/upload"]
-allow_methods = ["POST"]
-upload_directory = "/path/to/uploads"
-
-[server.routes."/cgi-bin"]
-allow_methods = ["GET", "POST"]
-cgi_extension = ".cgi"
-
-[[server]]
-listen = 8001
-server_name = ["llima-ce.42.fr", "www.localhost"]
-root = "./server/llima-ce"
-index = "index2.html"
-error_pages = {404 = "custom_404.html", 405 = "custom_405.html"}
-client_max_body_size = 100
-
+listen = "8000"
+server_name = ["localhost"]
+client_max_body_size = "1M"
+root = "html"
+[server.error_pages]
+404 = "pages/errors/404.html"
 
 [server.routes."/"]
-allow_methods = "GET"
+allow_methods = ["GET", "POST"]
+index = "index.html"
+upload_directory = "/uploads"
+
+[server.routes."/pages/calculator"]
+allow_methods = ["GET"]
+index = "calculator.html"
+
+[server.routes."/pages/bitcoin"]
+allow_methods = ["GET"]
+index = "bitcoin.html"
+
+[server.routes."/pages/upload"]
+allow_methods = ["POST", "GET"]
+upload_directory = "/uploads"
+index = "upload.html"
+
+[server.routes."/uploads"]
+allow_methods = ["GET", "POST", "DELETE"]
+auto_index = "on"
+index = "posts.html"
+
+[server.routes."/42"]
+allow_methods = ["GET"]
+proxy_pass = "https://www.42sp.org.br"
+
+[server.routes."/cgi/post"]
+allow_methods = ["POST"]
+cgi = "sum.py"
+cgi_pass = ".py"
+
+[server.routes."/cgi/get"] 
+allow_methods = ["GET"]
+cgi = "bitcoin_value.py"
+cgi_pass = ".py"
+
+
+[[server]]
+listen = "3001"
+server_name = ["localhost", "youtube.com"]
+client_max_body_size = "10M"
+root = "html"
+[server.error_pages]
+404 = "pages/errors/404.html"
+
+[server.routes."/"]
+allow_methods = ["GET", "POST"]
+index = "index.html"
+upload_directory = "/uploads"
+
+[server.routes."/pages/calculator"]
+allow_methods = ["GET"]
+index = "calculator.html"
+
+[server.routes."/pages/bitcoin"]
+allow_methods = ["GET"]
+index = "bitcoin.html"
+
+[server.routes."/pages/upload"]
+allow_methods = ["POST", "GET"]
+upload_directory = "/uploads"
+index = "upload.html"
+
+[server.routes."/uploads"]
+allow_methods = ["GET", "POST", "DELETE"]
+auto_index = "on"
+index = "posts.html"
+
+[server.routes."/42"]
+allow_methods = ["GET"]
+proxy_pass = "https://www.42sp.org.br"
+
+[server.routes."/cgi/post"]
+allow_methods = ["POST"]
+cgi = "sum.py"
+cgi_pass = ".py"
+
+[server.routes."/cgi/get"] 
+allow_methods = ["GET"]
+cgi = "bitcoin_value.py"
+cgi_pass = ".py"

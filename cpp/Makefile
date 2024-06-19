@@ -2,16 +2,15 @@ NAME			=	webserver
 UNITEST			=	unitest
 CC				=	c++
 
-CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3 -fsanitize=address
-CFLAGSTEST 		= 	-g3 -std=c++11
+CFLAGS			=	-Wall -Wextra -Werror -std=c++98 -g3 
 
 HEADER			=	-I src/header
 
 HEADER_TEST 	=	-I test/header
 
-CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp Request.cpp Response.cpp
+CLASS			= 	Configuration.cpp  Server.cpp Routes.cpp SocketServer.cpp WebServer.cpp Request.cpp Response.cpp Cgi.cpp
  
-UTILS			= 	ends_with.cpp trim.cpp strtokS.cpp starts_with.cpp split.cpp 
+UTILS			= 	ends_with.cpp trim.cpp strtokS.cpp starts_with.cpp split.cpp isNumber.cpp files.cpp
 
 SRC				=	main.cpp $(addprefix class/, $(CLASS)) $(addprefix utils/, $(UTILS))
 
@@ -30,6 +29,9 @@ $(OBJ_DIR)/%.o:		$(SOURCES_DIR)/%.cpp
 					$(CC) $(CFLAGS) $(HEADER) -c $< -o $@
 
 all:				$(NAME)
+
+valgrind: $(NAME)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --tool=memcheck ./webserver
 
 $(NAME):			$(OBJ_DIR) $(OBJS)
 					$(CC) $(CFLAGS) $(HEADER) $(OBJS) -o $(NAME)

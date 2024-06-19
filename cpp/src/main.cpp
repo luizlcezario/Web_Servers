@@ -1,16 +1,11 @@
-#include <iostream>
-#include <fstream>
-#include <cstdio>
-#include <Configuration.hpp>
-#include <SocketServer.hpp>
-#include <WebServer.hpp>
-#define MAX_EVENTS 10
+#include "Configuration.hpp"
+
 
 
 int main(int argc, char *argv[])
 {
 	Config::Configuration config;
-	WebServer::WebServer *webserver = NULL;
+	WebServer *webserver ;
 
 	std::string path = "./configuration/server.toml";
 	std::string mimeType = "./configuration/mimeType.toml";
@@ -29,11 +24,12 @@ int main(int argc, char *argv[])
 		path = argv[1];
 	try
 	{
+		webserver = new WebServer();
 		std::cout << "Loading file: " << path << std::endl;
 		config.loadMimeTypes(mimeType);
+		initialize_http_messages();
 		config.loadFile(path);
-		std::cout << config;
-		webserver = config.createSockets();
+		config.createSockets(webserver);
 		std::cout << "Start Server:" << path << std::endl;
 		webserver->start();
 		delete webserver;
@@ -41,5 +37,7 @@ int main(int argc, char *argv[])
 	catch (const std::exception &e)
 	{
 		std::cerr << e.what() << '\n';
+		delete webserver;
 	}
+	
 }

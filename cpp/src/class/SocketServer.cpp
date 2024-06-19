@@ -1,7 +1,6 @@
 #include "SocketServer.hpp"
 
-namespace Config
-{
+
 
     static bool verifyIpNumber(std::string ip) {
         std::vector<std::string> ips = utils::split(ip, ".");
@@ -36,14 +35,14 @@ namespace Config
         throw Excp::SocketCreation("Invalid format of IP please use 0.0.0.0:80 or 80 or 0.0.0.0");
     }
 
-    SocketServer::SocketServer() : servers(), listen_fd(0), server_addr() , port(ISROOT ? 80 : 8080), ipV4("0.0.0.0"), _ev(new  poll_event)
+    SocketServer::SocketServer() : servers(), listen_fd(0), server_addr() , port(ISROOT ? 80 : 8080), ipV4("0.0.0.0"), _ev(),  _connections()
     {
         this->createSocket();
         this->bindSocket();
         this->listenSocket();
     }
 
-     SocketServer::SocketServer(std::string ip) : servers(), listen_fd(0), server_addr(), _ev(new poll_event){
+     SocketServer::SocketServer(std::string ip) : servers(), listen_fd(0), server_addr(), _ev(), _connections(){
         std::vector<std::string> ips = utils::split(ip, ":");
         port = atoi(ips[1].c_str());
         ipV4 = ips[0];
@@ -56,12 +55,14 @@ namespace Config
     }
     Server *SocketServer::getServer(std::string host) 
     {
+        if (servers.find(host) == servers.end())
+            return NULL;
         return this->servers[host];
     }
     
     SocketServer::~SocketServer()
     {
-        delete _ev;
+        close(listen_fd);
     }
 
     void SocketServer::createSocket()
@@ -76,7 +77,7 @@ namespace Config
     void SocketServer::bindSocket()
     {
         int opt = 1;
-        if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
         {
             throw Excp::SocketBind("on Bindsocket setsocket");
         }
@@ -84,7 +85,7 @@ namespace Config
         server_addr.sin_addr.s_addr = inet_addr(ipV4.c_str());
         server_addr.sin_port = htons(port);
         
-        if (bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        if (bind(listen_fd, (sockaddr *)&server_addr, sizeof(server_addr)) < 0)
         {
             throw Excp::SocketBind("SocketBind bind");
         }
@@ -92,7 +93,7 @@ namespace Config
 
     void SocketServer::listenSocket()
     {
-        if (listen(listen_fd, SOMAXCONN) < 0)
+        if (listen(listen_fd, 5) < 0)
         {
             throw Excp::SocketListen("-1");
         }
@@ -114,41 +115,113 @@ namespace Config
         }
     }
 
-    poll_event *SocketServer::getEv() const {
-        return _ev;
-    }
     void SocketServer::setEv(uint32_t event, int fd) {
         #ifdef __APPLE__
+            
             EV_SET(_ev, fd, event, EV_ADD, 0, 0, NULL);
         #else
-            _ev->events = event;
-            _ev->data.fd = fd;
+            _ev.events = event;
+            _ev.data.fd = fd;
         #endif
     }
 
     void SocketServer::addEpollFd(int epoll_fd) {
+        _connections.type = "new connection";
+        _connections.ptr = this;
         #ifdef __APPLE__
-            setEv(EVFILT_READ, listen_fd);
-            if (kevent(epoll_fd, _ev, 1, NULL, 0, NULL) == -1)
+            EV_SET(&_ev, this->listen_fd, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, &_connections);
+            if (kevent(epoll_fd, &_ev, 1, NULL, 0, NULL) == -1)
                 throw Excp::EpollCreation("Failed to add socket to epoll set");
         #else
-            setEv(EPOLLIN, listen_fd);
-            if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , _ev) == -1)
+            _ev.events = EPOLLIN | EPOLLOUT;
+            _ev.data.fd = this->listen_fd;
+            _ev.data.ptr = &_connections;
+            if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd , &_ev) == -1)
                 throw Excp::EpollCreation("Failed to add socket to epoll set");
         #endif
-    }
+}
 
-
-    int SocketServer::resolveHostName() 
-    {
-        // struct addrinfo *res;
-        // for (std::map<int, Config::Server *>::iterator it = socketServer->servers; it != socketServer->servers.end(); it++) {
-        //     int result = getaddrinfo(it->first.c_str(), NULL, NULL, &res);
-        //     std::cout << "Result: " << result->ai_canonname << std::endl;
-        //     if (result == 0) {
-        //         freeaddrinfo(res);
-        //     }
-        // }
-        return 1;
+void SocketServer::VeifyMethodValid(Request *req) {
+    std::string list = req->getConfig("allow_methods");
+    if (list != "") {
+        std::vector<std::string> methods = _parseArray<std::string>(list);
+        if(std::find(methods.begin(), methods.end(), req->getMethod()) == methods.end()) {
+            req->errorCode = 405;
+            return;
+        }
     }
-} // namespace Config
+}
+
+void SocketServer::parser(Request *req) {
+    std::string data = req->req;
+    size_t pos = data.find(CRLF);
+
+    if (data.empty()) {
+        req->errorCode = 400;
+        return;
+    }
+	// http line
+	if (!req->isHttpparser) {
+		pos = data.find(CRLF);
+		if (pos == std::string::npos)
+			return ;
+		std::string requestLine = data.substr(0, pos);
+		req->isHttpparser = req->parseRequsetLine(requestLine);
+		req->req = req->req.substr(pos + 2);
+		if (!req->isHttpparser)
+			return ;
+	}
+	// headers
+	if (!req->isHeadearsParser) {
+		pos = req->req.find(CRLF CRLF);
+		if (pos == std::string::npos) {
+			req->errorCode = 400;
+			return ;
+		}
+		std::string headersContent = req->req.substr(0, pos);
+		std::vector<std::string> _headers = utils::split(headersContent, "\n");
+		for (std::vector<std::string>::iterator it = _headers.begin(); it != _headers.end(); it++) {
+			std::string line = *it;
+			if (line.find(":") == std::string::npos) {
+				req->errorCode = 400;
+				return; 
+			}
+			if (utils::starts_with(line, HOST)) {
+				req->host = utils::trim(line.substr(line.find(":") + 1));
+				req->host = req->host.substr(0, req->host.find(":"));
+			} else if (utils::starts_with(line, CONTENT_LENGTH)) {
+				std::string number = utils::trim(line.substr(line.find(":") + 1));
+				if (!utils::isNumber(number)) {
+					req->errorCode = 400;
+					return ;
+				}
+				req->body_length = atoi(number.c_str());
+			} 
+            std::string key = utils::trim(line.substr(0, line.find(":")));
+			std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+			req->headers[key] = utils::trim(line.substr(line.find(":") + 1));
+		}
+		req->isHeadearsParser = true;
+ 		req->server = getServer(req->getHost());
+        if (req->server == NULL) {
+            req->errorCode = 400;
+            return;
+        }
+        req->route = req->server->getLocations(req->getPath());
+        VeifyMethodValid(req);
+
+		if (std::find(req->server->getServerName().begin(), req->server->getServerName().end(), req->host) == req->server->getServerName().end()) {
+			 req->errorCode = 400;
+			return;
+		}
+		req->req = req->req.substr(pos + 4);
+		if (!req->isHeadearsParser)
+			return;
+	}
+	if (!req->isBodyParser) {
+		req->parseBody();
+		if (!req->isBodyParser)
+			return;
+	}
+    return; 
+}

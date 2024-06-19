@@ -1,134 +1,239 @@
 #include "WebServer.hpp"
 
-WebServer::WebServer::WebServer()
-{
+bool isRunning(bool status) {
+	static bool running = true;
+
+	if (!status)
+		running = false;
+	return running;
 }
 
-WebServer::WebServer::~WebServer()
+
+
+void stop(int sig) {
+	if (sig == SIGINT || sig == SIGQUIT) {
+		isRunning(false);
+	}
+}
+
+WebServer::WebServer()
 {
-    for (std::map<int, Config::SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++)
+
+}
+
+
+void WebServer::_processReq(connection_t *conn) {
+    Response res;
+    conn->req.execute(&res);
+    std::string message = res.getMessage();
+	ssize_t bytesSend = write(conn->fd, message.c_str(), message.size());
+    if (bytesSend <= 0){
+        conn->type = "error";
+    }
+}
+
+
+WebServer::~WebServer()
+{
+    for (std::map<int, SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++)
     {
         delete it->second;
     }
     _sockets.clear();
 }
 
-void WebServer::WebServer::addServerToSocket(std::string ip, Config::Server *server)
+void WebServer::addServerToSocket(std::string ip, Server *server)
 {
-    if (_socketServers.find(ip) == _socketServers.end())
-    {
-        Config::SocketServer *socket = new Config::SocketServer(ip);
-        _socketServers[ip] = socket;
-        _sockets[socket->getListenFd()] = socket;
-    }
-    _sockets[_socketServers[ip]->getListenFd()]->addServer(server);
+        if (_socketServers.find(ip) == _socketServers.end())
+        {
+            SocketServer *socket = new SocketServer(ip);
+            _socketServers[ip] = socket;
+            _sockets[socket->getListenFd()] = socket;
+        }
+        _sockets[_socketServers[ip]->getListenFd()]->addServer(server);
+   
 }
+
+
+bool setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		return false;
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		return false;
+	}
+	return true;
+}
+
 
 
 #ifdef __APPLE__
-void WebServer::WebServer::start() {
+void WebServer::start() {
     _epoll_fd = kqueue();
     if (_epoll_fd < 0)
         throw Excp::EpollCreation("Error creating kqueue");
-    for (std::map<int, Config::SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++) { 
+    for (std::map<int, SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++) { 
         it->second->addEpollFd(_epoll_fd);
     }
-    while (_eppollWait());
+    _eppollWait();
 }
 
-void WebServer::WebServer::verifyheaders(Request *req, Config::SocketServer *socket) throw(Excp::ErrorRequest) {
-    Config::Server *server = socket->getServer(req->getHost());
-    if (server == NULL)
-        throw Excp::ErrorRequest("Host not found");
-    if (req->getBodyLength() > server->getClientMaxBodySize()) 
-        throw Excp::ErrorRequest("Body size too large");
-    Config::Routes *location = server->getLocations(req->getPath());
-    if (location == NULL && server->getRoot() == "")
-        throw Excp::ErrorRequest("Location not found");
-    req->setServer(server);
-    req->setRoute(location);
-}
+void WebServer::_eppollWait() {
+    std::signal(SIGINT, stop);
+	std::signal(SIGQUIT, stop);
 
-int WebServer::WebServer::_eppollWait() {
-    static Config::SocketServer *socket = NULL;
-    static int conn_sock = -1;
+    while (isRunning(true)) {
+
     int num_events = kevent(_epoll_fd, NULL, 0, _events, MAX_EVENTS , NULL);
     if (num_events < 0)
-        throw Excp::EpollCreation("Failed to wait for events");
+        return;
     for (int i = 0; i < num_events; ++i) { 
-        int client_fd = _events[i].ident;  
-        std::cout << "Event trtrigger try to accept connections: "<< client_fd << std::endl; 
-        if (_sockets.find(client_fd) != _sockets.end()) {
-            std::cout << "Event trtrigger accept connections"<< client_fd << std::endl;
-            socket = _sockets[client_fd];
-            conn_sock = accept(socket->getListenFd(), (struct sockaddr *)NULL, NULL);
-            if (conn_sock == -1) {
-                std::cerr << "connection not accept" << std::endl;
-                return 1;
+        connection_t *connection = (connection_t *)(_events[i].udata);
+        SocketServer *server = (SocketServer *)connection->ptr;
+        if (connection->type == "new connection") {
+            struct sockaddr_in clientAddr;
+            socklen_t clientAddrLen = sizeof(clientAddr);
+            int clientSocket = accept(server->getListenFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
+            if (clientSocket != -1) {
+                setNonBlocking(clientSocket);
+                connection_t *newConnection = new connection_t;
+                Request req;
+                newConnection->type = "connected";
+                newConnection->ptr = server;
+                newConnection->fd = clientSocket;
+                newConnection->req = req;
+                EV_SET(_events, clientSocket, EVFILT_READ, EV_ADD, 0, 0, newConnection);
+                kevent(_epoll_fd, _events, 1, NULL, 0, NULL);
             }
-            std::cout << "Event on client coon: " << conn_sock << " "<< socket->getIpV4() << " " << client_fd << std::endl;
-            try {
-                Request req = Request::newRequest(conn_sock);
-                verifyheaders(&req, socket);
-                Response *res = req.execute();
-                res->execute();
-                res->sendResponse(conn_sock);
-                delete res;
-            } catch (Excp::ErrorRequest e) {
-                std::cout << e.what() << std::endl;
+            continue;
+        }
+        if (_events[i].flags & EV_EOF) {
+            close(connection->fd);
+            delete connection;
+            continue;
+        }
+        if (_events[i].filter == EVFILT_READ) {
+            connection->req.read_request(connection->fd);
+            if (!connection->req.req.size())  {
+                close(connection->fd);
+                delete connection;
+                continue;
             }
-            close(conn_sock);
-            socket = NULL;
-            conn_sock = -1;
+            bool parsed = connection->req.parser();
+            Server *serverR = server->getServer(connection->req.getHost());
+            Routes *route = serverR->getLocations(connection->req.getPath());
+            parsed = connection->req.verifyheaders(serverR, route);
+            if (parsed || connection->req.errorCode != 0) {
+                connection->type = "response";
+                EV_SET(_events, connection->fd, EVFILT_WRITE, EV_ADD, 0, 0, connection);
+                kevent(_epoll_fd, _events, 1, NULL, 0, NULL);
+            }
+            continue;
+            }
+            if (_events[i].filter == EVFILT_WRITE) {
+                _processReq(connection);
+                close(connection->fd);
+				delete connection;
+                connection = NULL;
+				continue;
+            }
         }
     }
-    return 1;
 }
 #else 
 
-void WebServer::WebServer::start() {
+void WebServer::start() {
     _epoll_fd = epoll_create1(0);
 	if (_epoll_fd < 0)
         throw Excp::EpollCreation("Error creating epoll");
-    for (std::map<int, Config::SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++) { 
+    for (std::map<int, SocketServer *>::iterator it = _sockets.begin(); it != _sockets.end(); it++) { 
         it->second->addEpollFd(_epoll_fd);
     }
-    while (_eppollWait());
+    _eppollWait();
 }
 
-int WebServer::WebServer::_eppollWait() {
-    int num_events = epoll_wait(_epoll_fd, _events, MAX_EVENTS , -1);
-    if (num_events < 0)
-        throw Excp::EpollCreation("Failed to wait for events");
-    for (int i = 0; i < num_events; ++i) { 
-        Config::SocketServer *socket;
-        int client_fd = _events[i].data.fd;
-        if(_sockets.find(client_fd) != _sockets.end()) {
-            socket = _sockets[client_fd];
-            int conn_sock = accept(socket->getListenFd(), (struct sockaddr *)NULL, NULL);
-                if (conn_sock == -1) {
-                    perror("accept");
-                    return 1;
-                }
-                socket->setEv(EPOLLIN, conn_sock);
-                if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, conn_sock, socket->getEv()) == -1) {
-                    perror("epoll_ctl: conn_sock");
-                    return 1;
-                }
-        } else {
-            std::cout << "Event on client  "<< socket->getIpV4() << client_fd << std::endl;
-            try {
-                Request req = Request::newRequest(client_fd);
+void WebServer::_eppollWait() {
+    std::map<int, connection_t > connections;
+    std::signal(SIGINT, stop);
+	std::signal(SIGQUIT, stop);
 
-            } catch (Excp::ErrorRequest& e) {
-                std::cout << e.what() << std::endl;
+	while (isRunning(true)) {
+		int numEvents = epoll_wait(_epoll_fd, _events, MAX_EVENTS, 5000);
+
+		if (numEvents == -1) {
+			return;
+		}
+
+		for (int i = 0; i < numEvents; i++) {
+			std::string requestData;
+            connection_t *connection = (connection_t *)(_events[i].data.ptr);
+			SocketServer *server = (SocketServer *)(connection->ptr);
+			if (connection->type == "new connection") {
+				struct sockaddr_in clientAddr;
+				socklen_t clientAddrLen = sizeof(clientAddr);
+				int clientSocket = accept(server->getListenFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
+
+				if (clientSocket > 0){
+					setNonBlocking(clientSocket);
+					connection_t *newConnection = &connections[clientSocket];
+					Request req;
+					newConnection->type = "connected";
+					newConnection->ptr = server;
+					newConnection->fd = clientSocket;
+					newConnection->req = req;
+					struct epoll_event event;
+					event.events = EPOLLIN;
+					event.data.ptr = newConnection;
+					epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, clientSocket, &event);
+                    std::cerr << "New connection created: " << newConnection->fd << std::endl;
+				}
+				continue;
+			}
+
+			if (_events[i].events & (EPOLLRDHUP | EPOLLHUP)) {
+				epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, connection->fd, 0);
+                std::cerr << "Connection closed: " << connection->fd << std::endl;
+				close(connection->fd);
+				continue;
+			}
+
+			if (_events[i].events & EPOLLIN) {
+				connection->req.read_request(connection->fd);
+                if (!connection->req.data.size())  {
+                    epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, connection->fd, 0);
+                    std::cerr << "Request read failed, connection closed: " << connection->fd << std::endl;
+                    close(connection->fd);
+                    continue;
+                }
+                connection->req.req += connection->req.data;
+                server->parser(&connection->req);
+                if(connection->req.isParsed() ) {
+                    connection->type = "response";
+					struct epoll_event event;
+					event.events = EPOLLOUT;
+					event.data.ptr = connection;
+					epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, connection->fd, &event);
+                }
+				continue;
+			}
+			if (_events[i].events & EPOLLOUT) {
+				_processReq(connection);
+                epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, connection->fd, 0);
+				close(connection->fd);
+                std::cerr << "Request processed, connection closed: " << connection->fd << std::endl;
+				continue;
+			}
+            if (_events[i].events & EPOLL_CTL_DEL) {
+                std::cerr << "Connection closed: " << connection->fd << std::endl;
             }
-    
-            close(client_fd);
-            continue;
-        }
-    }
-    return 1;
+            if (_events[i].events & (EPOLLERR | EPOLLET | EPOLLONESHOT | EPOLLWAKEUP | EPOLLEXCLUSIVE | EPOLLMSG | EPOLLWRBAND | EPOLLWRNORM | EPOLLRDBAND | EPOLLRDNORM | EPOLLPRI)){
+                epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, connection->fd, 0);
+                std::cerr << "Error occurred, connection closed: " << connection->fd << std::endl;
+                close(connection->fd);
+                continue;
+            }
+		}
+	}
 }
 
 #endif
