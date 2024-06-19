@@ -37,7 +37,8 @@ bool Request::parseRequsetLine(std::string line) {
 		method = getMethodE(requestLineTokens[0]);
 		path = requestLineTokens[1];
         std::string http = utils::trim(requestLineTokens[2], "\r\n");
-		if (method == UNKNOWN || http.compare("HTTP/1.1") != 0) {
+		if (method == UNKNOWN 
+		|| http.compare("HTTP/1.1") != 0) {
 			errorCode = 505;
 			return false;
 		}
